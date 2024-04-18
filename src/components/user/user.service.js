@@ -1,29 +1,45 @@
 class UserService {
-  constructor() {
-    this.users = [];
+  constructor(repository) {
+    this.repository = repository;
   }
 
-  addUser = (user) => {
-    if (this.users.find((u) => u.email === user.email)) {
+  addUser = async (user) => {
+    if (await this.repository.getByEmail(user.email) == null) {
+      return this.repository.create(user);
+    } else {
       throw new Error('User already exists');
     }
-    this.users.push(user);
-    return user;
   };
 
-  getUsers = () => this.users;
-
-  getUser = (id) => {
-    const user = this.users.find((u) => u.id === id);
-    return user;
+  updateUser = async (user) => {
+    await this.getUserById(user._id); // Alternatively you can create with put if it does not exist
+    return await this.repository.update(user);
   };
+
+
+  getUsers = () => this.repository.getAll();
+
+  getUserById = async (id) => {
+    const user = await this.repository.getById(id);
+    if (user) {
+      return user
+    } else {
+      throw new Error('User does not exists');
+    }
+  };
+
+  // TODO throw if not founded using property "deletedCount" of return value
+  deleteUserById = (id) => this.repository.deleteById(id);
+
+  deleteUsers = () => this.repository.deleteAll();
 
   login = (email, password) => {
-    const user = this.users.find((u) => u.email === email);
-    if (!user) throw new Error('Wrong email');
-    if (user.password !== password) throw new Error('Wrong password');
-    user.lastLogin = new Date();
-    return user;
+    const user = this.repository.getByEmail(email);
+    if (!user || user.password !== password) {
+      throw new Error('Invalid Login');
+    } else {
+      return user;
+    }
   };
 }
 

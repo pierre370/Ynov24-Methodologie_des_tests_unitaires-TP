@@ -1,87 +1,126 @@
 import User from './user.entities';
-import UserService from './user.service';
+import {describe, expect, it, jest} from '@jest/globals';
+import UserService from "./user.service.js";
 
 describe('UserService', () => {
-  let userService;
-  let usersToAdd;
 
-  beforeEach(() => {
-    userService = new UserService();
-    usersToAdd = [
-      new User('user1@example.com', 'password123'),
-      new User('user2@example.com', 'password456'),
-      new User('user3@example.com', 'password789'),
+    const mockUsers = [
+        new User("42@email.com", "42", 42, "4200a8f5185294c4fee1b41e"),
+        new User("user1@example.com", "password", 30, "661fa8f5185294c4fee1b41e"),
+        new User("user2@example.com", "password", 31, "001fa8f5185294c4fee1b41e"),
+        new User("user3@example.com", "password", 32, "111fa8f5185294c4fee1b41e")
     ];
-    usersToAdd.forEach((user) => {
-      userService.users.push(user);
-    });
-  });
 
-  describe('addUser', () => {
-    it('should add a new user to the users array', () => {
-      const user = new User('test@example.com', 'password123');
-      userService.addUser(user);
+    const mockUserRepository = {
+        getById: jest.fn((id) => mockUsers[0]),
+        getByEmail: jest.fn((email) => mockUsers[0]),
+        getAll: jest.fn(() => mockUsers),
+        deleteById: jest.fn((id) => undefined),
+        deleteAll: jest.fn(() => undefined),
+        create: jest.fn((user) => new User(user.email, user.password, user.age, "661fa8f5185294c4fee1b41e")),
+        update: jest.fn((user) => user),
+    };
 
-      expect(userService.users.length).toBe(4);
-      expect(userService.users[3]).toBe(user);
-    });
+    const userService = new UserService(mockUserRepository);
 
-    it('should throw an error if a user with the same email already exists', () => {
-      const existingUser = new User('user1@example.com', 'password123');
+    describe('addUser', () => {
+        it('nominal case - should add a new user to the users array', async () => {
+            // GIVEN
+            const user = new User('test@example.com', 'password123', 42);
+            const customMockUserRepository = {
+                getByEmail: jest.fn(() => undefined),
+                create: jest.fn((user) => new User(user.email, user.password, user.age, "661fa8f5185294c4fee1b41e"))
+            }
+            const customUserService = new UserService(customMockUserRepository);
 
-      expect(() => userService.addUser(existingUser)).toThrowError('User already exists');
-      expect(userService.users.length).toBe(3);
-    });
-  });
+            // WHEN
+            const res = await customUserService.addUser(user);
 
-  describe('getUsers', () => {
-    it('should return an empty array if there are no users in the database', () => {
-      const newUserService = new UserService();
-      const users = newUserService.getUsers();
-      expect(users).toEqual([]);
-    });
+            // THEN
+            expect(res.email).toBe(user.email);
+            expect(res.password).toBe(user.password);
+            expect(res.age).toBe(user.age);
+            expect(res._id).toBeDefined();
+        });
 
-    it('should return an array of all users in the database', () => {
-      const users = userService.getUsers();
+        it('functional error - should throw an error if a user with the same email already exists', async () => {
+            // GIVEN
+            const existingUser = {...mockUsers[0]};
 
-      expect(users).toEqual(usersToAdd);
-    });
-  });
-
-  describe('getUser', () => {
-    it('should return undefined if the user is not found', () => {
-      const user = userService.getUser('3');
-
-      expect(user).toBeUndefined();
-    });
-
-    it('should return the correct user if the user is found', () => {
-      const foundUser = userService.getUser(usersToAdd[0].id);
-
-      expect(foundUser).toEqual(usersToAdd[0]);
-      expect(foundUser).not.toEqual(usersToAdd[1]);
-    });
-  });
-
-  describe('login', () => {
-    it('should throw an error if the email is not found', () => {
-      expect(() => userService.login('user4@example.com', '123456').toThrowError('Wrong email'));
-      expect(usersToAdd[0].lastLogin).toBeUndefined();
+            // WHEN + THEN
+            await expect(userService.addUser(existingUser)).rejects.toThrow('User already exists');
+        });
     });
 
-    it('should throw an error if the password is incorrect', () => {
-      expect(() => userService.login('user1@example.com', '123456').toThrowError('Wrong password'));
-      expect(usersToAdd[0].lastLogin).toBeUndefined();
+    describe('getUsers', () => {
+        it('nominal case - should return an empty array if there are no users in the database', () => {
+            // GIVEN
+            const customMockUserRepository = {
+                getAll: jest.fn(() => [])
+            }
+            const customUserService = new UserService(customMockUserRepository);
+
+            // WHEN
+            const res = customUserService.getUsers();
+
+            // THEN
+            expect(res).toEqual([]);
+        });
+
+        it('nominal case - should return an array of all users in the database', () => {
+            expect(userService.getUsers().length).toEqual(4);
+        });
     });
 
-    it('should log in the user and update the last login time', () => {
-      const beforeLogin = new Date();
-      const loggedInUser = userService.login('user1@example.com', 'password123');
-      const afterLogin = new Date();
+    describe('getUserById', () => {
+        it('functional error - should throw an error if the user is not found', async () => {
+            // GIVEN
+            const customMockUserRepository = {
+                getById: jest.fn(() => undefined)
+            }
+            const customUserService = new UserService(customMockUserRepository);
 
-      expect(loggedInUser).toEqual(usersToAdd[0]);
-      expect(usersToAdd[0].lastLogin.getTime()).toBeGreaterThanOrEqual(beforeLogin.getTime());
-      expect(usersToAdd[0].lastLogin.getTime()).toBeLessThanOrEqual(afterLogin.getTime());
+            // WHEN - THEN
+            await expect(customUserService.getUserById("0")).rejects.toThrow('User does not exists');
+        });
+
+        it('nominal case - should return the correct user if the user is found', async () => {
+            const res = await userService.getUserById(mockUsers[0]._id);
+            expect(res).toEqual(mockUsers[0]);
+        });
     });
-  });
+
+    describe('login', () => {
+        it('functional error - should throw an error if the email is not found', async () => {
+            // GIVEN
+            const customMockUserRepository = {
+                getByEmail: jest.fn(() => undefined)
+            }
+            const customUserService = new UserService(customMockUserRepository);
+
+            // WHEN
+            try {
+                await customUserService.login('name@a.com', '123456');
+
+            // THEN
+            } catch (error) {
+                expect(error.message).toBe('Invalid Login');
+            }
+        });
+
+        it('functional error - should throw an error if the password is incorrect', async () => {
+            try {
+                await userService.login(mockUsers[0].email, "wrong password");
+            } catch (error) {
+                expect(error.message).toBe('Invalid Login');
+            }
+        });
+
+        it('nominal case - should return nothing', async () => {
+            const res = await userService.login(mockUsers[0].email, mockUsers[0].password);
+            expect(res).toBe(mockUsers[0]);
+        });
+    });
+
+    // TODO updateUser & deleteUserById
 });

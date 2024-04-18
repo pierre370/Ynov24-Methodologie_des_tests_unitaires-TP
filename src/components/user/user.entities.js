@@ -1,21 +1,23 @@
-import crypto from 'crypto';
-
 class User {
-  constructor(email, password, age, lastLogin) {
-    this.id = crypto.randomUUID();
+  constructor(email, password, age, _id = null) {
+    if (_id) {
+      this._id = _id;
+    }
     this.email = email;
     this.password = password;
     this.age = age;
-    this.lastLogin = lastLogin;
   }
 
   toJSON() {
     return {
-      id: this.id,
+      id: this._id,
       email: this.email,
       age: this.age || null,
-      lastLogin: this.lastLogin || null,
     };
+  }
+
+  static fromDocument(doc) {
+    return new User(doc.email, doc.password, doc.age, doc._id);
   }
 }
 
