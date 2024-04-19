@@ -1,3 +1,5 @@
+import {DateTime} from "luxon";
+
 class UserService {
   constructor(repository) {
     this.repository = repository;
@@ -33,11 +35,13 @@ class UserService {
 
   deleteUsers = () => this.repository.deleteAll();
 
-  login = (email, password) => {
-    const user = this.repository.getByEmail(email);
+  login = async (email, password) => {
+    const user = await this.repository.getByEmail(email);
     if (!user || user.password !== password) {
       throw new Error('Invalid Login');
     } else {
+      user.lastLogin = DateTime.local(); // Set lastLogin to the current time
+      this.repository.update(user); // Update the user's lastLogin in the repository
       return user;
     }
   };
