@@ -1,6 +1,10 @@
-import app from "./app.js";
-import dotenv from "dotenv";
-import db from "./mongo/db.js";
+import dotenv from 'dotenv';
+import swaggerUi from 'swagger-ui-express';
+import app from './app.js';
+import db from './mongo/db.js';
+import UserRouter from './components/user/user.router.js';
+import swaggerDocument from './swagger-output.json' assert { type: "json" };
+
 
 dotenv.config();
 
@@ -10,3 +14,7 @@ app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
   db.admin().ping().then(r => console.log("DB connected"));
 });
+
+app.use('/users', UserRouter);
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
