@@ -25,7 +25,13 @@ class UserController {
   };
 
   getUserById = async (req, res) => {
+    // #swagger.tags = ['User']
+    // #swagger.description = 'Endpoint to get a specific user.'
     const { id } = req.params;
+
+    /* #swagger.responses[200] = {
+      schema: { "$ref": "#/definitions/User" },
+      description: "User registered successfully." } */
     this.userService.getUserById(id)
         .then(createdUser => res.status(200).send(createdUser))
         .catch(err => res.status(404).send(err.message))

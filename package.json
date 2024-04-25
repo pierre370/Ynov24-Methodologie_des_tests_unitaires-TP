@@ -21,7 +21,8 @@
     "luxon": "^3.4.4",
     "mongodb": "^5.5.2",
     "swagger-autogen": "^2.23.7",
-    "swagger-ui-express": "^5.0.0"
+    "swagger-ui-express": "^5.0.0",
+    "typescript": "^5.4.5"
   },
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.21.2",

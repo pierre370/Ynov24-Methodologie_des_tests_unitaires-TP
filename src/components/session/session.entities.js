@@ -1,8 +1,9 @@
+import {DateTime} from "luxon";
 
 class Session {
-  constructor(session_start,session_end,user_id, lens_id,  _id = null) {
-    if (_id) {
-      this._id = _id;
+  constructor(session_start,session_end,user_id, lens_id,  id = null) {
+    if (id) {
+      this.id = id;
     }
     this.session_start = session_start;
     this.session_end = session_end;
@@ -13,7 +14,7 @@ class Session {
 
   toJSON() {
     return {
-      id: this._id,
+      id: this.id,
       session_start: this.session_start,
       session_end: this.session_end,
       user_id: this.user_id,
@@ -21,6 +22,10 @@ class Session {
     };
   }
 
+  static fromDocument(doc) {
+    return new Session(doc.session_start, doc.session_end, doc.user_id, doc.lens_id, doc.id);
+  }
+
 }
 
-export default Lens;
+export default Session;

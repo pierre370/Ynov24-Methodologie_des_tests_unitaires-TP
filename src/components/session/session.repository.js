@@ -1,6 +1,7 @@
 import db from "../../mongo/db.js";
 import {ObjectId} from "mongodb";
 import Session from "./session.entities.js";
+import User from "../user/user.entities.js";
 
 class SessionRepository {
   constructor() {
@@ -12,6 +13,15 @@ class SessionRepository {
     return Session.fromDocument(await this.collection.findOne(query));
   }
 
+  async getByUserId(userId) {
+    let query = {user_id: userId};
+    const document = await this.collection.findOne(query);
+    if (!document) {
+      return undefined
+    }
+    return Session.fromDocument(document);
+  }
+
 
   getAll = async () => {
     const documents = await this.collection.find({}).toArray();
@@ -20,10 +30,13 @@ class SessionRepository {
 
   deleteAll = async () => await this.collection.deleteMany({});
 
-  async create(document) {
-    const res = await this.collection.insertOne(document);
-    document.id = res.insertedId.toString()
-    return document;
+  async create(userId) {
+    let query = {user_id: userId};
+    const document = await this.collection.findOne(query);
+    if (!document) {
+      return undefined
+    }
+    return Session.fromDocument(document);
   };
 
   async update(document) {

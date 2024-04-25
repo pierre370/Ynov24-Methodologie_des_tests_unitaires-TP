@@ -1,13 +1,14 @@
 import {DateTime} from "luxon";
 
 class SessionService {
-  constructor(repository) {
+  constructor(repository, user) {
     this.repository = repository;
+    this.user = user;
   }
 
-  addSession = async (session) => {
-    if (await this.repository.getById(session.id) == null) {
-      return this.repository.create(session);
+  addSession = async (userId) => {
+    if (await this.user.getById(user.id) == null) {
+      return this.repository.create(user);
     } else {
       throw new Error('Session already exists');
     }
@@ -49,8 +50,8 @@ class SessionService {
     }
   };
 
-  calculateEndAfterStart = (start, duration) => {
-    return start.plus({ hours: duration });
+  calculateEndAfterStart = (start) => {
+    return start.setHours(start.getHours() + 15);
   };
 
   validateSessionTimes = (start, end) => {
@@ -63,6 +64,25 @@ class SessionService {
 
   deleteSession = () => this.repository.deleteAll();
 
+  async getSessionByUserAndStartTime(userId, portStartTime) {
+    const session = await this.repository.getByUserId(userId);
+    if (session) {
+      await this.startSession(session.id, portStartTime)
+    } else {
+      throw new Error('Session does not exists');
+    }
+
+  }
+
+  async getSessionByUserAndStopTime(userId, sessionId, portEndTime) {
+    const session = await this.repository.getByUserId(userId);
+    if (session && sessionId === session.id) {
+      await this.stopSession(session.id, portEndTime)
+    } else {
+      throw new Error('Session does not exists');
+    }
+
+  }
 }
 
 export default SessionService;

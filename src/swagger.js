@@ -5,7 +5,13 @@ const doc = {
         title: 'Labo lens',
         description: ' Application de port de lentille'
     },
-    host: 'localhost:3000'
+    host: 'localhost:3000',
+    tags: [
+        {
+            "name": "User",
+            "description": "Endpoints"
+        }
+    ]
 };
 
 const outputFile = './swagger-output.json';

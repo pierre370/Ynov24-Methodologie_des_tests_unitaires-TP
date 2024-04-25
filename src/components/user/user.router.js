@@ -1,6 +1,7 @@
 import express from 'express';
 
 class UserRouter {
+  // #swagger.tags = ['USER']
   constructor(userController) {
     this.userController = userController;
   }

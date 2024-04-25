@@ -1,0 +1,162 @@
+openapi: 3.0.1
+info:
+  title: Labo lens
+  description: Application de port de lentille.
+  version: 1.0.0
+  license:
+    name: Eclipse Public License 2.0
+    url: 'https://www.eclipse.org/org/documents/epl-2.0/EPL-2.0.html'
+servers:
+  - url: 'http://localhost:4200/'
+tags:
+- name: users
+  description: User management
+paths:
+  /user:
+    get:
+      tags:
+      - users
+      summary: Get the list of all user
+      operationId: getAllUser
+      responses:
+        200:
+          description: List of all users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        default:
+          description: Generic error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags:
+      - users
+      summary: Create a new user
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        200:
+          description: The created User
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        default:
+          description: Generic error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /user/{userId}:
+    parameters:
+      - name: userId
+        in: path
+        description: The id of the user
+        required: true
+        schema:
+          type: string
+        example: 1
+    get:
+      tags:
+      - users
+      summary: Get a single user based on its id
+      operationId: getUser
+      responses:
+        200:
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        default:
+          description: Generic error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      tags:
+      - users
+      summary: Update an existing User
+      operationId: updateUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        200:
+          description: The updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        default:
+          description: Generic error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+      - users
+      summary: Delete an existing user
+      operationId: deleteUser
+      responses:
+        204:
+          description: User deleted response
+        default:
+          description: Generic error response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    User:
+      description: Object representing a User
+      required:
+      - description
+      type: object
+      properties:
+        id:
+          description: id of the taks
+          type: string
+          readOnly: true
+          example: e1cb23d0-6cbe-4a29-b586-bfa424bc93fd
+        email:
+          description: indicates if a taks is completed or not
+          type: string
+        password:
+          description: indicates if a taks is completed or not
+          type: string
+        age:
+          description: indicates if a taks is completed or not
+          type: string
+        lastLogin:
+          description: description of the task
+          type: string
+          example: My important task
+
+    Error:
+      description: Object representing an error
+      type: object
+      properties:
+        code:
+          format: int32
+          description: Error code that identify of the error
+          type: integer
+          example: "1000"
+        message:
+          description: Short description of the error
+          type: string
+          example: Could not perform the task
