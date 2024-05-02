@@ -43,10 +43,11 @@ class SessionRepository {
     const filter = this.createBsonId(document._id);
     const updateDocument = {
       $set: {
-        session_start: document.session_start,
+        id: document.id,
+        lens_id: document.lens_id,
         session_end: document.session_end,
+        session_start: document.session_start,
         user_id: document.user_id,
-        lens_id: document.lens_id
       }
     };
     await this.collection.updateOne(filter, updateDocument);

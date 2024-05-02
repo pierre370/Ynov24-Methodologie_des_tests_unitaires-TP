@@ -81,7 +81,7 @@ class SessionService {
     }
   }
 
-  async getSessionByUserAndStopTime(userId, sessionId, portEndTime) {
+  async endPortForUser(userId, sessionId, portEndTime) {
     const session = await this.repository.getByUserId(userId);
     if (session && sessionId === session.id) {
       await this.stopSession(session.id, portEndTime);

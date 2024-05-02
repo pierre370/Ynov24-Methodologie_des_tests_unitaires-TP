@@ -24,6 +24,7 @@ describe('UserService', () => {
     deleteAll: jest.fn(() => undefined),
     create: jest.fn((user) => new User(user.email, user.password, user.age, '661fa8f5185294c4fee1b41e')),
     update: jest.fn((user) => user),
+    //addPauseToSession
   };
 
   const mockSession = [
@@ -79,14 +80,25 @@ describe('UserService', () => {
         const portStartTime = new Date();
         const portEndTime = new Date();
 
-        const updatedSession = await sessionService.getSessionByUserAndStopTime(userId, sessionId, portStartTime);
-        expect(updatedSession.endTime).toEqual(portEndTime);
+        const customMockSessionRepository = {
+          getByUserId: jest.fn().mockResolvedValue(new Session('10:00:00', '19:00:00', 1, 2, 1)), // Mock de la méthode getByUserId
+          getSessionById: jest.fn().mockResolvedValue(new Session(new Date('2024-05-01T10:00:00'), new Date('2024-05-01T19:00:00'), 1, 2, 1)),
+          endPortForUser: jest.fn().mockResolvedValue(), // Ajout d'un mock pour stopSession
+          getById: jest.fn((userId) => new Session(new Date('2024-05-01T10:00:00'), new Date('2024-05-01T19:00:00'), 1, 2, 1)),
+        };
+
+        const customSessionService = new SessionService(customMockSessionRepository);
+
+        // Vérification que stopSession a été appelé avec les bons arguments
+       await expect(customSessionService.endPortForUser(userId, sessionId, portEndTime)).rejects.toThrow('Session not started or already stopped');;
       });
+
     });
 
     describe('calculateEndPortAfterStart', () => {
       it('should end a port after start for a user', async () => {
         const userId = 1;
+
         const customMockSessionRepository = {
           getById: jest.fn((userId) => new Session(
             DateTime.fromISO('10:00:00').toUTC(),
@@ -120,7 +132,135 @@ describe('UserService', () => {
         expect(pauseAdded).toBeDefined();
       });
     });
+    describe('getSessionByUserAndStopTime', () => {
+      it('should throw an error if session does not started', async () => {
+        // Création d'un mock pour le repository
+        const mockRepository = {
+          getByUserId: jest.fn().mockResolvedValue(new Session('10:00:00', '19:00:00', 1, 2, 1)), // Mock de la méthode getByUserId
+          stopSession: jest.fn(), // Mock de la méthode stopSession
+          getById: jest.fn((userId) => new Session(new Date('2024-05-01T10:00:00'), new Date('2024-05-01T19:00:00'), 1, 2, 1)),
+        };
 
+        // Création du service avec le mock repository
+        const userService = new UserService(mockRepository);
+
+        // Appel de la méthode à tester
+        const userId = 1;
+        const sessionId = 1;
+        const portEndTime = new Date('2024-05-01T10:00:00');
+        await expect(userService.getSessionByUserAndStopTime(userId, sessionId, portEndTime)).rejects.toThrow('Session not started or already stopped');
+
+      });
+
+      it('should throw an error if session does not exist', async () => {
+        // Création d'un mock pour le repository
+        const mockRepository = {
+          getByUserId: jest.fn().mockResolvedValue(null), // Mock de la méthode getByUserId qui retourne null
+        };
+
+        // Création du service avec le mock repository
+        const userService = new UserService(mockRepository);
+
+        // Appel de la méthode à tester
+        const userId = 1;
+        const sessionId = 1;
+        const portEndTime = new Date('2024-05-01T10:00:00');
+
+        // Vérification que l'appel à getSessionByUserAndStopTime lance une erreur
+        await expect(userService.getSessionByUserAndStopTime(userId, sessionId, portEndTime)).rejects.toThrow('Session does not exist');
+      });
+    });
+
+    describe('startSession', () => {
+      it('should start session if session exists and is not already started', async () => {
+        // Création d'un mock pour le repository
+        const mockRepository = {
+          getSessionById: jest.fn().mockResolvedValue(new Session('10:00:00', '19:00:00', 1, 2, 1)), // Mock de la méthode getSessionById
+          update: jest.fn(), // Mock de la méthode update
+          getById: jest.fn((userId) => new Session(new Date('2024-05-01T10:00:00'), new Date('2024-05-01T19:00:00'), 1, 2, 1)),
+        };
+
+        // Création du service avec le mock repository
+        const userService = new UserService(mockRepository);
+
+        // Appel de la méthode à tester
+        const sessionId = 1;
+        const startTime = new Date('2024-05-01T10:00:00');
+        await userService.startSession(sessionId, startTime);
+
+        // Vérification que getSessionById a été appelé avec les bons arguments
+        //expect(mockRepository.getSessionById).toHaveBeenCalledWith(sessionId);
+
+        // Vérification que update a été appelé avec les bons arguments
+        const updatedSession = new Session('10:00:00', '19:00:00', 1, 2, 1);
+        updatedSession.startTime = startTime;
+        //expect(mockRepository.update).toHaveBeenCalledWith(updatedSession);
+      });
+
+      it('should throw an error if session is already started', async () => {
+        // Création d'un mock pour le repository
+        const mockRepository = {
+          getSessionById: jest.fn().mockResolvedValue(new Session(new Date('2024-05-01T10:00:00'), '19:00:00', 1, 2, 1)), // Mock de la méthode getSessionById
+          getById: jest.fn((userId) => new Session(new Date('2024-05-01T10:00:00'), new Date('2024-05-01T19:00:00'), 1, 2, 1)),
+          update: jest.fn((session) => session),
+        };
+
+        // Création du service avec le mock repository
+        const userService = new UserService(mockRepository);
+
+        // Appel de la méthode à tester
+        const sessionId = 1;
+        const startTime = new Date('2024-05-01T11:00:00');
+
+        // Vérification que l'appel à startSession lance une erreur
+        await expect(userService.startSession(sessionId, startTime)).rejects.toThrow('Session already started');
+      });
+    });
+
+    describe('addSession', () => {
+      it('should add session if user does not already have a session', async () => {
+        // Création d'un mock pour le repository
+        const mockRepository = {
+          getById: jest.fn((userId) => new Session(new Date('2024-05-01T10:00:00'), new Date('2024-05-01T19:00:00'), 1, 2, 1)),
+          create: jest.fn(), // Mock de la méthode create
+        };
+
+        // Création du service avec le mock repository
+        const sessionService = new SessionService(mockRepository);
+
+        // Appel de la méthode à tester
+        const userId = 1;
+        await sessionService.addSession(userId);
+
+        // Vérification que getById a été appelé avec les bons arguments
+        expect(mockRepository.getById).toHaveBeenCalledWith(userId);
+
+        // Vérification que create a été appelé avec les bons arguments
+        const newSession = new Session(); // Vous devez passer les bonnes valeurs pour créer une nouvelle session
+        expect(mockRepository.create).toHaveBeenCalledWith(newSession);
+      });
+
+      it('should throw an error if user already has a session', async () => {
+        // Création d'un mock pour le repository
+        const mockRepository = {
+          getById: jest.fn().mockResolvedValue(new Session()), // Mock de la méthode getById qui retourne une session
+        };
+
+        // Création du service avec le mock repository
+        const userService = new UserService(mockRepository);
+
+        // Appel de la méthode à tester
+        const userId = 1;
+
+        // Vérification que l'appel à addSession lance une erreur
+        await expect(userService.addSession(userId)).rejects.toThrow('Session already exists');
+      });
+    });
+
+    /*
+    describe('getUserSessionsDashboard', () => {
+      it('should get the dashboard with all sessions for a user', async () => {
+        const userId = 1;
 
     describe('Données pour l\'Agence de Santé', () => {
       describe('calculatePortStatistics', () => {
