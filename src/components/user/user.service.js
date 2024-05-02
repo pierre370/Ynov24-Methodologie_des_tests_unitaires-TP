@@ -18,6 +18,15 @@ class UserService {
     return await this.repository.update(user);
   };
 
+  async addPauseToSession(userId, sessionId, pauseStartTime, pauseEndTime) {
+    const session = await this.sessionService.getSessionById(sessionId);
+    if (session) {
+      session.addPause(pauseStartTime, pauseEndTime);
+      await this.sessionService.updateSession(sessionId, session);
+    } else {
+      throw new Error('Session does not exist');
+    }
+  };
 
   getUsers = () => this.repository.getAll();
 
